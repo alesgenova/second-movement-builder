@@ -40,7 +40,7 @@ RUN apt-get update && \
 #ENV EM_CONFIG /emconfig
 #RUN emcc --generate-config
 
-RUN git clone https://github.com/joeycastillo/second-movement.git
+RUN git clone -b rtc-counter32-my-build --single-branch https://github.com/alesgenova/second-movement.git
 
 WORKDIR second-movement/
 
@@ -69,6 +69,10 @@ COPY static static
 #RUN sed -n '/#include/{s/#include "\(.*\).h"/  <option value="\1">\1<\/option>/;p}' Sensor-second-movement/movement_faces.h > static/available_faces.html
 COPY ./generate-faces-html.sh ./
 RUN ./generate-faces-html.sh > static/available_faces.html
+COPY ./generate-signal-tunes-html.sh ./
+RUN ./generate-signal-tunes-html.sh > static/available_signal_tunes.html
+COPY ./generate-alarm-tunes-html.sh ./
+RUN ./generate-alarm-tunes-html.sh > static/available_alarm_tunes.html
 RUN cd /second-movement && git rev-parse HEAD > /static/commit_hash
 COPY templates templates
 COPY code code

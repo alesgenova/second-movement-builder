@@ -80,6 +80,7 @@ local function process_post_args(args)
   end
 
   local defines = {}
+  local tunes_defines = {}
   local makeargs = {}
   for k, v in pairs(args) do
     if k:match('^defgroup') then
@@ -89,6 +90,24 @@ local function process_post_args(args)
     if res then
       makeargs[res] = sanitise(v)
     end
+  end
+
+  local debounce_ticks = args['debounce_ticks']
+  defines["MOVEMENT_DEBOUNCE_TICKS"] = debounce_ticks
+
+  local default_signal_tune = args['default_signal_tune']
+  local default_alarm_tune = args['default_alarm_tune']
+  tunes_defines[default_signal_tune] = 1
+  tunes_defines[default_alarm_tune] = 1
+
+  local included_signal_tunes = normalise_post_arg(args['included_signal_tunes'])
+  for _, tune in ipairs(included_signal_tunes) do
+    tunes_defines["INCLUDE_" .. tune] = 1
+  end
+
+  local included_alarm_tunes = normalise_post_arg(args['included_alarm_tunes'])
+  for _, tune in ipairs(included_alarm_tunes) do
+    tunes_defines["INCLUDE_" .. tune] = 1
   end
 
   local faces = normalise_post_arg(args['faces'])
@@ -110,13 +129,13 @@ local function process_post_args(args)
   end
 
   if #secondary_faces == 0 then
-    return makeargs, defines, combined_faces, 0
+    return makeargs, defines, tunes_defines, combined_faces, 0
   else 
-    return makeargs, defines, combined_faces, #faces
+    return makeargs, defines, tunes_defines, combined_faces, #faces
   end
 end
 
-local function generate_build_hash(makeargs, defines, faces, secondary_face_index)
+local function generate_build_hash(makeargs, defines, tunes_defines, faces, secondary_face_index)
   local s = ''
   for k, v in pairs(makeargs) do
     s = s .. k .. ':' .. v .. ':'
@@ -124,10 +143,13 @@ local function generate_build_hash(makeargs, defines, faces, secondary_face_inde
   for k, v in pairs(defines) do
     s = s .. k .. ':' .. v .. ':'
   end
+  for k, v in pairs(tunes_defines) do
+    s = s .. k .. ':' .. v .. ':'
+  end
   return ngx.md5(s .. table.concat(faces, ':') .. ':' .. secondary_face_index)
 end
 
-local function update_build_list(dir, makeargs, defines, faces, secondary_face_index)
+local function update_build_list(dir, makeargs, defines, tunes_defines, faces, secondary_face_index)
   -- Read in existing 'previous builds'.
   local previous_builds = '/builds/list.html'
   local count = 0
@@ -145,16 +167,17 @@ local function update_build_list(dir, makeargs, defines, faces, secondary_face_i
 
   -- Update 'previous builds' with new entry.
   pb_file = assert(io.open(previous_builds, 'w'))
-  pb_file:write(assert(render('build_record.html', {dir = dir, makeargs = makeargs, defines = defines, faces = faces, secondary_face_index = secondary_face_index})):gsub("\n", ""), "\n")
+  pb_file:write(assert(render('build_record.html', {dir = dir, makeargs = makeargs, defines = defines, tunes_defines = tunes_defines, faces = faces, secondary_face_index = secondary_face_index})):gsub("\n", ""), "\n")
   for _, line in ipairs(lines) do
     pb_file:write(line, "\n")
   end
   pb_file:close()
 end
 
-local function build(dir, makeargs, defines, faces, secondary_face_index)
+local function build(dir, makeargs, defines, tunes_defines, faces, secondary_face_index)
   assert(shell.run('rm -rf ' .. dir .. ' && mkdir ' .. dir))
   assert(render_to_file('movement_config.h', dir .. 'movement_config.h', {defines = defines, faces = faces, secondary_face_index = secondary_face_index}))
+  assert(render_to_file('movement_tunes_config.h', dir .. 'movement_tunes_config.h', {defines = tunes_defines}))
 
   local argslist = {}
   for k, v in pairs(makeargs) do
@@ -193,8 +216,8 @@ end
 
 
 -- MAIN STUFF
-local makeargs, defines, faces, secondary_face_index = process_post_args(ngx.req.get_post_args())
-local dir = '/builds/' .. generate_build_hash(makeargs, defines, faces, secondary_face_index) .. '/'
+local makeargs, defines, tunes_defines, faces, secondary_face_index = process_post_args(ngx.req.get_post_args())
+local dir = '/builds/' .. generate_build_hash(makeargs, defines, tunes_defines, faces, secondary_face_index) .. '/'
 
 if not exists(dir .. 'completed') then
   -- only one build at a time, please.
@@ -208,10 +231,10 @@ if not exists(dir .. 'completed') then
       return
     end
 
-    local ok, stdout, stderr = build(dir, makeargs, defines, faces, secondary_face_index)
+    local ok, stdout, stderr = build(dir, makeargs, defines, tunes_defines, faces, secondary_face_index)
     if ok then
       assert(render_to_file('success_build.html', dir .. 'index.html', {makeargs = makeargs, stdout = stdout, stderr = stderr}))
-      update_build_list(dir, makeargs, defines, faces, secondary_face_index)
+      update_build_list(dir, makeargs, defines, tunes_defines, faces, secondary_face_index)
     else
       ngx.log(ngx.WARN, 'Build failed: ' .. tostring(stderr))
       assert(render_to_file('fail_build.html', dir .. 'index.html', {stdout = stdout, stderr = stderr}))

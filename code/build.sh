@@ -16,6 +16,9 @@ cd /second-movement/
 echo '---- movement_config.h'
 cat "${dir}movement_config.h"
 
+echo '---- movement_tunes_config.h'
+cat "${dir}movement_tunes_config.h"
+
 # Don't bothering making most of the .o files
 for build_dir in "build-${board}_${display}" build-sim; do
   mkdir -p "$dir$build_dir"
@@ -27,8 +30,10 @@ for build_dir in "build-${board}_${display}" build-sim; do
   # only affected a couple of functions, but it didn't actually save that much time and
   # required a much larger change to the repo (i.e. not one we want to carry in a patch).
   rm "$dir$build_dir/movement.o"
+  rm "$dir$build_dir/movement_custom_signal_tunes.o"
+  rm "$dir$build_dir/movement_custom_alarm_tunes.o"
 done
 
-echo make BUILD="${dir}build-${board}_${display}" MOVEMENT_CONFIG="${dir}movement_config.h" "$@"
-make BUILD="${dir}build-${board}_${display}" MOVEMENT_CONFIG="${dir}movement_config.h" "$@"
-emmake make BUILD="${dir}build-sim" MOVEMENT_CONFIG="${dir}movement_config.h" "$@"
+echo make BUILD="${dir}build-${board}_${display}" MOVEMENT_CONFIG="${dir}movement_config.h" MOVEMENT_TUNES_CONFIG="${dir}movement_tunes_config.h" "$@"
+make BUILD="${dir}build-${board}_${display}" MOVEMENT_CONFIG="${dir}movement_config.h" MOVEMENT_TUNES_CONFIG="${dir}movement_tunes_config.h" "$@"
+emmake make BUILD="${dir}build-sim" MOVEMENT_CONFIG="${dir}movement_config.h" MOVEMENT_TUNES_CONFIG="${dir}movement_tunes_config.h" "$@"

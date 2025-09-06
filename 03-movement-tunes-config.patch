@@ -1,0 +1,46 @@
+diff --git a/Makefile b/Makefile
+index c4a9c20..f8bff88 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,10 @@
+ # Keep this first line.
+ GOSSAMER_PATH=gossamer
+ 
++ifdef MOVEMENT_TUNES_CONFIG
++CFLAGS += -DMOVEMENT_TUNES_CONFIG='"$(MOVEMENT_TUNES_CONFIG)"'
++endif
++
+ # Which board are we building for? Commented out to force a choice when building.
+ # Options are:
+ # - sensorwatch_pro
+diff --git a/movement_custom_alarm_tunes.c b/movement_custom_alarm_tunes.c
+index 9dc7929..d13244d 100644
+--- a/movement_custom_alarm_tunes.c
++++ b/movement_custom_alarm_tunes.c
+@@ -1,6 +1,10 @@
+ #include "movement_custom_alarm_tunes.h"
+ 
+-#include "movement_tunes_config.h"
++#ifndef MOVEMENT_TUNES_CONFIG
++#define MOVEMENT_TUNES_CONFIG "movement_tunes_config.h"
++#endif
++
++#include MOVEMENT_TUNES_CONFIG
+ 
+ #include <stdlib.h>
+ 
+diff --git a/movement_custom_signal_tunes.c b/movement_custom_signal_tunes.c
+index f8a0c89..516b70d 100644
+--- a/movement_custom_signal_tunes.c
++++ b/movement_custom_signal_tunes.c
+@@ -1,6 +1,10 @@
+ #include "movement_custom_signal_tunes.h"
+ 
+-#include "movement_tunes_config.h"
++#ifndef MOVEMENT_TUNES_CONFIG
++#define MOVEMENT_TUNES_CONFIG "movement_tunes_config.h"
++#endif
++
++#include MOVEMENT_TUNES_CONFIG
+ 
+ #include <stdlib.h>

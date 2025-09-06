@@ -6,6 +6,9 @@
          <% for k, v in pairs(defines) do %>
            <%= k %>=<%= v%>;
          <% end %>
+         <% for k, v in pairs(tunes_defines) do %>
+           <%= k %>=<%= v%>;
+         <% end %>
         <br>
         <strong>
          <% for _, face in ipairs(faces) do %>

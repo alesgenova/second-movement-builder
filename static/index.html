@@ -245,12 +245,32 @@ Experimental and unofficial. <a href="https://github.com/wryun/sensor-watch-buil
     <option value="custom">Custom</option>
 </select>
 
-<h5><label for="signal-tune">Signal tune (hourly)</label></h3>
-<select name="defgroup-SIGNAL" id="signal-tune" required>
-    <option value="SIGNAL_TUNE_DEFAULT">Default</option>
+<h5><label for="signal-tune">Default Signal tune (hourly)</label></h3>
+<select name="default_signal_tune" id="signal-tune" required>
+    <option value="SIGNAL_TUNE_DEFAULT" selected>Default</option>
     <option value="SIGNAL_TUNE_ZELDA_SECRET">Zelda Secret Sound</option>
-    <option value="SIGNAL_TUNE_MARIO_THEME">Mario</option>
+    <option value="SIGNAL_TUNE_MARIO_THEME">Mario theme</option>
+    <option value="SIGNAL_TUNE_MARIO_1UP">Mario 1 up</option>
+    <option value="SIGNAL_TUNE_MARIO_PUP">Mario power up</option>
+    <option value="SIGNAL_TUNE_MGS_CODEC">MGS Codec</option>
     <option value="SIGNAL_TUNE_KIM_POSSIBLE">Kim Possible</option>
+    <option value="SIGNAL_TUNE_POWER_RANGERS">Power Rangers</option>
+    <option value="SIGNAL_TUNE_LAYLA">Layla</option>
+    <option value="SIGNAL_TUNE_HARRY_POTTER_SHORT">Harry Potter (Short)</option>
+    <option value="SIGNAL_TUNE_HARRY_POTTER_LONG">Harry Potter (Long)</option>
+    <option value="SIGNAL_TUNE_JURASSIC_PARK">Jurassic Park</option>
+    <option value="SIGNAL_TUNE_EVANGELION">Evangelion</option>
+</select>
+
+<h5><label for="alarm-tune">Default Alarm tune</label></h3>
+<select name="default_alarm_tune" id="alarm-tune" required>
+    <option value="ALARM_TUNE_DEFAULT" selected>Default</option>
+    <option value="ALARM_TUNE_GIGI_DAG">Gigi D'Agostino</option>
+    <option value="ALARM_TUNE_TWINKLE">Twinkle little star</option>
+    <option value="ALARM_TUNE_BABY">Hush Little Baby</option>
+    <option value="ALARM_TUNE_INTER">Forza Inter Milano</option>
+    <option value="ALARM_TUNE_ELMO">Elmo's World</option>
+    <option value="ALARM_TUNE_FARM">Old McDonald</option>
 </select>
 
 <h5><label for="faces">Faces</label></h5>
@@ -263,6 +283,19 @@ Experimental and unofficial. <a href="https://github.com/wryun/sensor-watch-buil
 <p>
 <select class="facetarget" name="secondary_faces" id="secondary_faces" multiple>
     <!--# include file="available_faces.html" -->
+</select>
+
+<h5><label for="debounce">Button Debounce</label></h3>
+<input name="debounce_ticks" id="debounce" type="number" value="0" min="0" max="8" step="1" required/>
+
+<h5><label for="signal_tunes">Included Signal tunes</label></h3>
+<select name="included_signal_tunes" id="signal_tunes" multiple>
+  <!--# include file="available_signal_tunes.html" -->
+</select>
+
+<h5><label for="alarm_tunes">Included Alarm tunes</label></h3>
+<select name="included_alarm_tunes" id="alarm_tunes" multiple>
+  <!--# include file="available_alarm_tunes.html" -->
 </select>
 
 <p>
