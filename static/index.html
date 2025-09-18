@@ -8,6 +8,23 @@
 <title>Sensor Watch Builder</title>
 
 <script>
+const default_primary_faces = [
+  "stock_clock_face",
+  "fast_stopwatch_face",
+  "alarm_face",
+  "countdown_face",
+  "totp_lfs_face",
+]
+
+const default_secondary_faces = [
+  "settings_face",
+  "set_time_face",
+  "tunes_face",
+  "pin_face",
+  "page_ordering_face",
+  "voltage_face",
+]
+
 function dragstart_handler(ev) {
   ev.dataTransfer.setData("text/plain", ev.target.id)
   ev.dataTransfer.dropEffect = "copy"
@@ -91,6 +108,17 @@ window.addEventListener("DOMContentLoaded", () => {
 
   for (const option of document.querySelectorAll(".facetarget > option")) {
     option.remove()
+  }
+
+  const primary_faces_select = document.getElementById("faces")
+  const secondary_faces_select = document.getElementById("secondary_faces")
+
+  for (const face_name of default_primary_faces) {
+    add_option(primary_faces_select, face_name)
+  }
+
+  for (const face_name of default_secondary_faces) {
+    add_option(secondary_faces_select, face_name)
   }
 
   for (const face_target of document.querySelectorAll(".facetarget")) {
