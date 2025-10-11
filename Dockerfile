@@ -1,4 +1,4 @@
-FROM openresty/openresty:bookworm
+FROM openresty/openresty:1.25.3.2-bookworm
 
 ENV DEBIAN_FRONTEND noninteractive
 
