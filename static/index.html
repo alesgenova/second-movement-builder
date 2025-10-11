@@ -13,10 +13,16 @@ const default_primary_faces = [
   "fast_stopwatch_face",
   "alarm_face",
   "countdown_face",
-  "totp_lfs_face",
 ]
 
 const default_secondary_faces = [
+  "totp_lfs_face",
+  "tunes_face",
+  "sunrise_sunset_face",
+  "probability_face",
+]
+
+const default_tertiary_faces = [
   "settings_face",
   "set_time_face",
   "tunes_face",
@@ -43,10 +49,16 @@ function drop_handler(ev) {
 function option_handler(ev, el) {
   ev.preventDefault()
 
+  const primary_faces_select = document.getElementById("faces")
   const secondary_faces_select = document.getElementById("secondary_faces")
-  if (el.parentNode != secondary_faces_select) {
+  const tertiary_faces_select = document.getElementById("tertiary_faces")
+
+  if (el.parentNode == primary_faces_select) {
     el.remove()
     secondary_faces_select.append(el)
+  } else if (el.parentNode == secondary_faces_select) {
+    el.remove()
+    tertiary_faces_select.append(el)
   } else {
     el.remove()
   }
@@ -112,6 +124,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   const primary_faces_select = document.getElementById("faces")
   const secondary_faces_select = document.getElementById("secondary_faces")
+  const tertiary_faces_select = document.getElementById("tertiary_faces")
 
   for (const face_name of default_primary_faces) {
     add_option(primary_faces_select, face_name)
@@ -119,6 +132,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
   for (const face_name of default_secondary_faces) {
     add_option(secondary_faces_select, face_name)
+  }
+
+  for (const face_name of default_tertiary_faces) {
+    add_option(tertiary_faces_select, face_name)
   }
 
   for (const face_target of document.querySelectorAll(".facetarget")) {
@@ -166,7 +183,7 @@ select {
   height: 300px;
 }
 
-#secondary_faces {
+#secondary_faces, #tertiary_faces {
   height: 200px;
 }
 
@@ -199,7 +216,7 @@ select {
     height: 200px;
   }
 
-  #secondary_faces {
+  #secondary_faces, #tertiary_faces {
     height: 100px;
   }
 
@@ -297,7 +314,7 @@ Experimental and unofficial. <a href="https://github.com/wryun/sensor-watch-buil
     <option value="ALARM_TUNE_TWINKLE">Twinkle little star</option>
     <option value="ALARM_TUNE_BABY">Hush Little Baby</option>
     <option value="ALARM_TUNE_INTER">Forza Inter Milano</option>
-    <option value="ALARM_TUNE_ELMO">Elmo's World</option>
+    <option value="ALARM_TUNE_ELMO">Elmo's Song</option>
     <option value="ALARM_TUNE_FARM">Old McDonald</option>
 </select>
 
@@ -310,6 +327,12 @@ Experimental and unofficial. <a href="https://github.com/wryun/sensor-watch-buil
 <h5><label for="secondary_faces">Secondary Faces</label></h5>
 <p>
 <select class="facetarget" name="secondary_faces" id="secondary_faces" multiple>
+    <!--# include file="available_faces.html" -->
+</select>
+
+<h5><label for="secondary_faces">Tertiary Faces</label></h5>
+<p>
+<select class="facetarget" name="tertiary_faces" id="tertiary_faces" multiple>
     <!--# include file="available_faces.html" -->
 </select>
 

@@ -15,6 +15,7 @@ const watch_face_t watch_faces[] = {
 
 #define MOVEMENT_NUM_FACES (sizeof(watch_faces) / sizeof(watch_face_t))
 #define MOVEMENT_SECONDARY_FACE_INDEX <%- secondary_face_index %>
+#define MOVEMENT_TERTIARY_FACE_INDEX <%- tertiary_face_index %>
 
 /* Determines the intensity of the led colors
  * Set a hex value 0-15 with 0x0 being off and 0xF being max intensity
