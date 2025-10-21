@@ -8,6 +8,8 @@
 <title>Sensor Watch Builder</title>
 
 <script>
+let FACE_ELEMENT_ID = 0;
+
 const default_primary_faces = [
   "stock_clock_face",
   "fast_stopwatch_face",
@@ -25,15 +27,60 @@ const default_secondary_faces = [
 const default_tertiary_faces = [
   "settings_face",
   "set_time_face",
-  "tunes_face",
   "pin_face",
   "page_ordering_face",
   "voltage_face",
 ]
 
-function dragstart_handler(ev) {
-  ev.dataTransfer.setData("text/plain", ev.target.id)
+let touchDataTransfer = {
+  id: null,
+  name: "",
+  target: null,
+}
+
+function on_new_face_dragstart(ev) {
+  ev.dataTransfer.setData("text/plain", JSON.stringify({id: null, name: ev.target.id}))
   ev.dataTransfer.dropEffect = "copy"
+}
+
+function on_new_face_touchstart(ev) {
+  ev.preventDefault()
+  touchDataTransfer = {
+    id: null,
+    name: ev.target.id,
+    target: ev.target,
+  }
+}
+
+function on_face_touchend(ev) {
+  ev.preventDefault()
+  const target = document.elementFromPoint(ev.changedTouches[0].clientX, ev.changedTouches[0].clientY)
+
+  if (Object.is(target, touchDataTransfer.target)) {
+    const event = new Event("click")
+    ev.target.dispatchEvent(event)
+    return
+  }
+
+  const group_target = target.closest(".facegroup")
+
+  if (group_target) {
+    let position = target
+    // if dropping on another face, place the dropped face just before it
+    if (Object.is(target, group_target)) {
+      position = null
+    }
+
+    // if we're dropping a face previously added, remove the element being dropped
+    if (touchDataTransfer.id) {
+      const el = document.getElementById(touchDataTransfer.id)
+      if (el) {
+        el.remove()
+      }
+    }
+
+    add_face(group_target, touchDataTransfer.name, position)
+  }
 }
 
 function dragover_handler(ev) {
@@ -42,8 +89,25 @@ function dragover_handler(ev) {
 
 function drop_handler(ev) {
   ev.preventDefault()
-  const dropped = event.dataTransfer.getData("text/plain")
-  add_option(ev.target, dropped)
+  const drop_data = JSON.parse(event.dataTransfer.getData("text/plain"))
+  let target = ev.target
+  let position = null
+
+  // if dropping on another face, place the dropped face just before it
+  if (target.tagName !== "DIV") {
+    position = target
+    target = target.parentElement
+  }
+
+  // if we're dropping a face previously added, remove the element being dropped
+  if (drop_data.id) {
+    const el = document.getElementById(drop_data.id)
+    if (el) {
+      el.remove()
+    }
+  }
+
+  add_face(target, drop_data.name, position)
 }
 
 function option_handler(ev, el) {
@@ -64,19 +128,51 @@ function option_handler(ev, el) {
   }
 }
 
+function on_face_dragstart(ev, el) {
+  ev.dataTransfer.setData("text/plain", JSON.stringify({id: el.id, name: el.getAttribute("data-name")}))
+  ev.dataTransfer.dropEffect = "move"
+}
+
+function on_face_touchstart(ev, el) {
+  ev.preventDefault()
+  touchDataTransfer = {
+    id: el.id,
+    name: el.getAttribute("data-name"),
+    target: ev.target,
+  }
+}
+
+function add_face(face_group, face_name, position) {
+  const el = document.createElement("button")
+  el.type = "button"
+  el.id = "face_" + FACE_ELEMENT_ID++
+  el.setAttribute("data-name", face_name)
+  el.draggable = true
+  el.classList = "face-buttons"
+  el.appendChild(document.createTextNode(face_name.replace("_face", "")));
+  el.addEventListener("dragstart", ev => on_face_dragstart(ev, el))
+  el.addEventListener("touchstart", ev => on_face_touchstart(ev, el))
+  el.addEventListener("touchend", on_face_touchend)
+  el.addEventListener("click", ev => el.remove())
+  if (position) {
+    face_group.insertBefore(el, position)
+  } else {
+    face_group.append(el)
+  }
+}
+
 function add_option(select_element, text) {
   const el = document.createElement("option")
   el.selected = true
   el.value = text
   el.append(document.createTextNode(text))
-  el.addEventListener("mousedown", ev => option_handler(ev, el))
-  el.addEventListener("touchstart", ev => option_handler(ev, el))
   select_element.append(el)
 }
 
-function new_face_click_handler(ev) {
+function on_new_face_click(ev) {
   ev.preventDefault()
-  add_option(document.getElementById("faces"), ev.target.id)
+  const primary_face_group = document.getElementById("primary_face_group")
+  add_face(primary_face_group, ev.target.id, null)
 }
 
 // Force us not to use the backwards cache
@@ -103,10 +199,13 @@ window.addEventListener("DOMContentLoaded", () => {
     {
       const el = document.createElement("button")
       el.id = option.value
+      el.classList = "face-buttons"
       el.draggable = true
       el.innerHTML = option.innerHTML
-      el.addEventListener("dragstart", dragstart_handler)
-      el.addEventListener("click", new_face_click_handler)
+      el.addEventListener("dragstart", on_new_face_dragstart)
+      el.addEventListener("touchstart", on_new_face_touchstart)
+      el.addEventListener("touchend", on_face_touchend)
+      el.addEventListener("click", on_new_face_click)
       span.append(el)
     }
     
@@ -122,42 +221,73 @@ window.addEventListener("DOMContentLoaded", () => {
     option.remove()
   }
 
-  const primary_faces_select = document.getElementById("faces")
-  const secondary_faces_select = document.getElementById("secondary_faces")
-  const tertiary_faces_select = document.getElementById("tertiary_faces")
+  const primary_face_group = document.getElementById("primary_face_group")
+  const secondary_face_group = document.getElementById("secondary_face_group")
+  const tertiary_face_group = document.getElementById("tertiary_face_group")
+
 
   for (const face_name of default_primary_faces) {
-    add_option(primary_faces_select, face_name)
+    add_face(primary_face_group, face_name, null)
   }
 
   for (const face_name of default_secondary_faces) {
-    add_option(secondary_faces_select, face_name)
+    add_face(secondary_face_group, face_name, null)
   }
 
   for (const face_name of default_tertiary_faces) {
-    add_option(tertiary_faces_select, face_name)
+    add_face(tertiary_face_group, face_name, null)
   }
 
-  for (const face_target of document.querySelectorAll(".facetarget")) {
-    face_target.addEventListener("drop", drop_handler)
-    face_target.addEventListener("dragover", dragover_handler)
+  for (const face_group of document.querySelectorAll(".facegroup")) {
+    face_group.addEventListener("drop", drop_handler)
+    face_group.addEventListener("dragover", dragover_handler)
   }
 
   const clear_button = document.getElementById("clear")
   clear_button.hidden = false
-  clear_button.addEventListener("click", () => {
-    for (const option of document.querySelectorAll(".facetarget > option")) {
-      option.remove()
-    }
-  })
-
+  
   const build_form = document.getElementById("build-form")
   const submit_button = document.getElementById("build")
   const spinner = document.getElementById("spinner")
+  build_form.addEventListener("reset", ev => {
+    for (const option of document.querySelectorAll(".facetarget > option")) {
+      option.remove()
+    }
+
+    for (const button of document.querySelectorAll(".facegroup > button")) {
+      button.remove()
+    }
+  })
+
   build_form.addEventListener('submit', ev => {
     submit_button.hidden = true
     clear_button.hidden = true
     spinner.hidden = false
+
+    // programmatically add faces to the hidden select fields needed by the html form
+
+    const primary_faces_select = document.getElementById("faces")
+    const secondary_faces_select = document.getElementById("secondary_faces")
+    const tertiary_faces_select = document.getElementById("tertiary_faces")
+    const primary_face_group = document.getElementById("primary_face_group")
+    const secondary_face_group = document.getElementById("secondary_face_group")
+    const tertiary_face_group = document.getElementById("tertiary_face_group")
+
+    const groups_selects = [
+      [primary_face_group, primary_faces_select],
+      [secondary_face_group, secondary_faces_select],
+      [tertiary_face_group, tertiary_faces_select],
+    ]
+
+    for (const option of document.querySelectorAll(".facetarget > option")) {
+      option.remove()
+    }
+
+    for (const [group, select] of groups_selects){
+      for (const child of group.children) {
+        add_option(select, child.getAttribute("data-name"))
+      }
+    }
   })
 })
 </script>
@@ -165,26 +295,27 @@ window.addEventListener("DOMContentLoaded", () => {
 <style>
 main {
   display: grid;
-  grid-template-columns: 30% 30% 40%;
+  grid-template-columns: 3fr 3fr 4fr;
+  gap: 2rem;
 }
 
 select {
-  width: 90%;
   font-size: large;
+  width: 100%;
 }
 
-#available_faces button {
-  padding: 3px;
-  margin: 3px;
+.face-buttons {
   font-size: medium;
+  padding: 0.25rem;
+  margin: 0.125rem;
 }
 
-#faces {
-  height: 300px;
+.face-button-container {
+  padding: 0.25rem;
 }
 
-#secondary_faces, #tertiary_faces {
-  height: 200px;
+.facetarget {
+  display: none;
 }
 
 .action-buttons {
@@ -193,9 +324,34 @@ select {
   font-size: x-large;
 }
 
+.facegroup {
+  padding: 0.25rem;
+  background-color: #efefef;
+  height: 8rem;
+  overflow-y: scroll;
+  border-style: solid;
+  border-width: 2px;
+  border-radius: 0.25rem;
+}
+
+.facegroup-primary {
+  border-color: rgba(0, 128, 0, 0.5);
+  background-color: rgba(0, 128, 0, 0.1);
+}
+
+.facegroup-secondary {
+  border-color: rgba(255, 165, 0, 0.5);
+  background-color: rgba(255, 165, 0, 0.1);
+}
+
+.facegroup-tertiary {
+  border-color: rgba(255, 69, 0, 0.5);
+  background-color: rgba(255, 69, 0, 0.1);
+}
+
 @media (max-width: 900px) {
   main {
-    grid-template-columns: 60% 40%;
+    grid-template-columns: 6fr 4fr;
   }
 
   select {
@@ -208,18 +364,15 @@ select {
     overflow: hidden;
   }
 
+  .face-buttons {
+    font-size: small;
+    padding: 0.125rem;
+    margin: 0.062rem;
+  }
+
   .action-buttons {
     font-size: large;
   }
-
-  #faces {
-    height: 200px;
-  }
-
-  #secondary_faces, #tertiary_faces {
-    height: 100px;
-  }
-
 }
 
 /* spinner from https://loading.io/css/ */
@@ -258,15 +411,17 @@ select {
 <section>
 <h1>Sensor Watch Builder</h1>
 
-<p>Build firmware for the <a href="https://sensorwatch.net/">Sensor Watch</a> online. Currently building
-from <a href="https://github.com/alesgenova/second-movement/tree/<!--# include file="commit_hash" -->">this commit</a>.
-Experimental and unofficial. <a href="https://github.com/wryun/sensor-watch-builder/">Source code on GitHub</a>.
+<p>
+  Build firmware for the <a href="https://sensorwatch.net/">Sensor Watch</a> online. Currently building
+  from <a href="https://github.com/alesgenova/second-movement/tree/<!--# include file="commit_hash" -->">this commit</a>.
+  Experimental and unofficial. <a href="https://github.com/wryun/sensor-watch-builder/">Source code on GitHub</a>.
+</p>
 </section>
 
 <main>
 <section id="js-section" hidden>
 <h3>Drag or click on faces...</h3>
-<div name="available_faces" id="available_faces" multiple required>
+<div name="available_faces" id="available_faces" multiple>
 </div>
 </section>
 
@@ -276,7 +431,7 @@ Experimental and unofficial. <a href="https://github.com/wryun/sensor-watch-buil
 
 <h3>Config</h3>
 
-<h5><label for="board-color">Board colour</label></h3>
+<h4><label for="board-color">Board colour</label></h4>
 <select name="makearg-BOARD" id="board-color" required>
     <option value="sensorwatch_pro">Pro</option>
     <option value="sensorwatch_red">Red</option>
@@ -284,13 +439,13 @@ Experimental and unofficial. <a href="https://github.com/wryun/sensor-watch-buil
     <option value="sensorwatch_blue">Blue</option>
 </select>
 
-<h5><label for="display-type">Display type</label></h3>
+<h4><label for="display-type">Display type</label></h4>
 <select name="makearg-DISPLAY" id="display-type" required>
     <option value="classic">Classic</option>
     <option value="custom">Custom</option>
 </select>
 
-<h5><label for="signal-tune">Default Signal tune (hourly)</label></h3>
+<h4><label for="signal-tune">Default Signal tune (hourly)</label></h4>
 <select name="default_signal_tune" id="signal-tune" required>
     <option value="SIGNAL_TUNE_DEFAULT" selected>Default</option>
     <option value="SIGNAL_TUNE_ZELDA_SECRET">Zelda Secret Sound</option>
@@ -307,7 +462,7 @@ Experimental and unofficial. <a href="https://github.com/wryun/sensor-watch-buil
     <option value="SIGNAL_TUNE_EVANGELION">Evangelion</option>
 </select>
 
-<h5><label for="alarm-tune">Default Alarm tune</label></h3>
+<h4><label for="alarm-tune">Default Alarm tune</label></h4>
 <select name="default_alarm_tune" id="alarm-tune" required>
     <option value="ALARM_TUNE_DEFAULT" selected>Default</option>
     <option value="ALARM_TUNE_GIGI_DAG">Gigi D'Agostino</option>
@@ -318,41 +473,40 @@ Experimental and unofficial. <a href="https://github.com/wryun/sensor-watch-buil
     <option value="ALARM_TUNE_FARM">Old McDonald</option>
 </select>
 
-<h5><label for="faces">Faces</label></h5>
-<p>
-<select class="facetarget" name="faces" id="faces" multiple required>
+<h4><label for="faces">Faces</label></h4>
+<div class="facegroup facegroup-primary" id="primary_face_group"></div>
+<select class="facetarget" name="faces" id="faces" multiple>
     <!--# include file="available_faces.html" -->
 </select>
 
-<h5><label for="secondary_faces">Secondary Faces</label></h5>
-<p>
+<h4><label for="secondary_faces">Secondary Faces</label></h4>
+<div class="facegroup facegroup-secondary" id="secondary_face_group"></div>
 <select class="facetarget" name="secondary_faces" id="secondary_faces" multiple>
-    <!--# include file="available_faces.html" -->
 </select>
 
-<h5><label for="secondary_faces">Tertiary Faces</label></h5>
-<p>
+<h4><label for="secondary_faces">Tertiary Faces</label></h4>
+<div class="facegroup facegroup-tertiary" id="tertiary_face_group"></div>
 <select class="facetarget" name="tertiary_faces" id="tertiary_faces" multiple>
-    <!--# include file="available_faces.html" -->
 </select>
 
-<h5><label for="debounce">Button Debounce</label></h3>
+<h4><label for="debounce">Button Debounce</label></h4>
 <input name="debounce_ticks" id="debounce" type="number" value="0" min="0" max="8" step="1" required/>
 
-<h5><label for="signal_tunes">Included Signal tunes</label></h3>
+<h4><label for="signal_tunes">Included Signal tunes</label></h4>
 <select name="included_signal_tunes" id="signal_tunes" multiple>
   <!--# include file="available_signal_tunes.html" -->
 </select>
 
-<h5><label for="alarm_tunes">Included Alarm tunes</label></h3>
+<h4><label for="alarm_tunes">Included Alarm tunes</label></h4>
 <select name="included_alarm_tunes" id="alarm_tunes" multiple>
   <!--# include file="available_alarm_tunes.html" -->
 </select>
 
 <p>
-<button class="action-buttons" id="clear" hidden>Clear</button>
-<input class="action-buttons" type="submit" id="build" value="Build a watch!">
+<button type="reset" class="action-buttons" id="clear" hidden>Clear</button>
+<button type="submit" class="action-buttons" id="build">Build a watch!</button>
 <div id="spinner" hidden><div class="lds-dual-ring"></div></div>
+</p>
 
 </form>
 </section>
