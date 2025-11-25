@@ -3,19 +3,29 @@
 
 #include "movement_faces.h"
 
-const watch_face_t watch_faces[] = {
-<% for _, face in pairs(faces) do %>
-  <%- face %>,
+
+#define PRIMARY_FACES(F) \
+<% for _, face in pairs(primary_faces) do -%>
+  F(<%- string.gsub(face, "_face", "") %>) \
 <% end %>
-};
+
+
+#define SECONDARY_FACES(F) \
+<% for _, face in pairs(secondary_faces) do -%>
+  F(<%- string.gsub(face, "_face", "") %>) \
+<% end %>
+
+
+#define TERTIARY_FACES(F) \
+<% for _, face in pairs(tertiary_faces) do -%>
+  F(<%- string.gsub(face, "_face", "") %>) \
+<% end %>
+
 
 <% for def, val in pairs(defines) do %>
 #define <%- def %> <%- val %>
 <% end %>
 
-#define MOVEMENT_NUM_FACES (sizeof(watch_faces) / sizeof(watch_face_t))
-#define MOVEMENT_SECONDARY_FACE_INDEX <%- secondary_face_index %>
-#define MOVEMENT_TERTIARY_FACE_INDEX <%- tertiary_face_index %>
 
 /* Determines the intensity of the led colors
  * Set a hex value 0-15 with 0x0 being off and 0xF being max intensity
@@ -64,5 +74,20 @@ const watch_face_t watch_faces[] = {
  * 3: 5 seconds
  */
 #define MOVEMENT_DEFAULT_LED_DURATION 1
+
+/* Sets how steps are counted when on the clock_face
+ * Valid values are:
+ * MOVEMENT_SC_OFF: Don't count steps on clock_face
+ * MOVEMENT_SC_ALWAYS: Always count steps on clock_face
+ * MOVEMENT_SC_DAYTIME: Count steps between MOVEMENT_STEP_COUNT_START and MOVEMENT_STEP_COUNT_END
+ * MOVEMENT_SC_NOT_INSTALLED: The LIS2DW isn't installed (the code handles this without it needing to be manally set)
+ */
+#define MOVEMENT_DEFAULT_COUNT_STEPS MOVEMENT_SC_OFF
+
+/* If the settings are set to use this start and end hor,
+    We only count steps when the step counter face is on.
+*/
+#define MOVEMENT_STEP_COUNT_START 5
+#define MOVEMENT_STEP_COUNT_END 22
 
 #endif // MOVEMENT_CONFIG_H_

@@ -113,7 +113,7 @@ function drop_handler(ev) {
 function option_handler(ev, el) {
   ev.preventDefault()
 
-  const primary_faces_select = document.getElementById("faces")
+  const primary_faces_select = document.getElementById("primary_faces")
   const secondary_faces_select = document.getElementById("secondary_faces")
   const tertiary_faces_select = document.getElementById("tertiary_faces")
 
@@ -184,7 +184,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const available_faces = document.getElementById("available_faces")
 
   let category = null;
-  for (const option of document.querySelectorAll("#faces > option")) {
+  for (const option of document.querySelectorAll("#primary_faces > option")) {
     if (option.dataset.category != category) {
       category = option.dataset.category
       const el = document.createElement("h3")
@@ -260,13 +260,15 @@ window.addEventListener("DOMContentLoaded", () => {
   })
 
   build_form.addEventListener('submit', ev => {
+    console.log("SUBMIT", ev.formData)
+    // ev.preventDefault();
     submit_button.hidden = true
     clear_button.hidden = true
     spinner.hidden = false
 
     // programmatically add faces to the hidden select fields needed by the html form
 
-    const primary_faces_select = document.getElementById("faces")
+    const primary_faces_select = document.getElementById("primary_faces")
     const secondary_faces_select = document.getElementById("secondary_faces")
     const tertiary_faces_select = document.getElementById("tertiary_faces")
     const primary_face_group = document.getElementById("primary_face_group")
@@ -473,9 +475,9 @@ select {
     <option value="ALARM_TUNE_FARM">Old McDonald</option>
 </select>
 
-<h4><label for="faces">Faces</label></h4>
+<h4><label for="primary_faces">Faces</label></h4>
 <div class="facegroup facegroup-primary" id="primary_face_group"></div>
-<select class="facetarget" name="faces" id="faces" multiple>
+<select class="facetarget" name="primary_faces" id="primary_faces" multiple>
     <!--# include file="available_faces.html" -->
 </select>
 
@@ -484,7 +486,7 @@ select {
 <select class="facetarget" name="secondary_faces" id="secondary_faces" multiple>
 </select>
 
-<h4><label for="secondary_faces">Tertiary Faces</label></h4>
+<h4><label for="tertiary_faces">Tertiary Faces</label></h4>
 <div class="facegroup facegroup-tertiary" id="tertiary_face_group"></div>
 <select class="facetarget" name="tertiary_faces" id="tertiary_faces" multiple>
 </select>

@@ -75,7 +75,7 @@ end
 
 local function process_post_args(args)
   local errors = {}
-  if args['faces'] == nil then
+  if args['primary_faces'] == nil then
     table.insert(errors, 'No faces provided')
   end
 
@@ -110,18 +110,34 @@ local function process_post_args(args)
     tunes_defines["INCLUDE_" .. tune] = 1
   end
 
-  local faces = normalise_post_arg(args['faces'])
-  local secondary_faces = normalise_post_arg(args['secondary_faces'])
-  local tertiary_faces = normalise_post_arg(args['tertiary_faces'])
-  local combined_faces = {}
+  local _primary_faces = normalise_post_arg(args['primary_faces'])
+  local _secondary_faces = normalise_post_arg(args['secondary_faces'])
+  local _tertiary_faces = normalise_post_arg(args['tertiary_faces'])
+  local primary_faces = {}
+  local secondary_faces = {}
+  local tertiary_faces = {}
 
-  for _, faces in ipairs({faces, secondary_faces, tertiary_faces}) do
-    for _, face in ipairs(faces) do
-      if available_faces[face] then
-        table.insert(combined_faces, face)
-      else
-        table.insert(errors, 'Face ' .. face .. ' not recognised')
-      end
+  for _, face in ipairs(_primary_faces) do
+    if available_faces[face] then
+      table.insert(primary_faces, face)
+    else
+      table.insert(errors, 'Face ' .. face .. ' not recognised')
+    end
+  end
+
+  for _, face in ipairs(_secondary_faces) do
+    if available_faces[face] then
+      table.insert(secondary_faces, face)
+    else
+      table.insert(errors, 'Face ' .. face .. ' not recognised')
+    end
+  end
+
+  for _, face in ipairs(_tertiary_faces) do
+    if available_faces[face] then
+      table.insert(tertiary_faces, face)
+    else
+      table.insert(errors, 'Face ' .. face .. ' not recognised')
     end
   end
 
@@ -129,24 +145,10 @@ local function process_post_args(args)
     abort_with_errors(errors)
   end
 
-  local secondary_face_index
-  if #secondary_faces == 0 then
-    secondary_face_index = 0
-  else
-    secondary_face_index = #faces
-  end
-
-  local tertiary_face_index
-  if #tertiary_faces == 0 then
-    tertiary_face_index = secondary_face_index
-  else
-    tertiary_face_index = #faces + #secondary_faces
-  end
-
-  return makeargs, defines, tunes_defines, combined_faces, secondary_face_index, tertiary_face_index
+  return makeargs, defines, tunes_defines, primary_faces, secondary_faces, tertiary_faces
 end
 
-local function generate_build_hash(makeargs, defines, tunes_defines, faces, secondary_face_index, tertiary_face_index)
+local function generate_build_hash(makeargs, defines, tunes_defines, primary_faces, secondary_faces, tertiary_faces)
   local s = ''
   for k, v in pairs(makeargs) do
     s = s .. k .. ':' .. v .. ':'
@@ -157,10 +159,10 @@ local function generate_build_hash(makeargs, defines, tunes_defines, faces, seco
   for k, v in pairs(tunes_defines) do
     s = s .. k .. ':' .. v .. ':'
   end
-  return ngx.md5(s .. table.concat(faces, ':') .. ':' .. secondary_face_index .. ':' .. tertiary_face_index)
+  return ngx.md5(s .. table.concat(primary_faces, ':') .. ':s:' .. table.concat(secondary_faces, ':') .. ':t:' .. table.concat(tertiary_faces, ':'))
 end
 
-local function update_build_list(dir, makeargs, defines, tunes_defines, faces, secondary_face_index, tertiary_face_index)
+local function update_build_list(dir, makeargs, defines, tunes_defines, primary_faces, secondary_faces, tertiary_faces)
   -- Read in existing 'previous builds'.
   local previous_builds = '/builds/list.html'
   local count = 0
@@ -178,16 +180,16 @@ local function update_build_list(dir, makeargs, defines, tunes_defines, faces, s
 
   -- Update 'previous builds' with new entry.
   pb_file = assert(io.open(previous_builds, 'w'))
-  pb_file:write(assert(render('build_record.html', {dir = dir, makeargs = makeargs, defines = defines, tunes_defines = tunes_defines, faces = faces, secondary_face_index = secondary_face_index, tertiary_face_index = tertiary_face_index})):gsub("\n", ""), "\n")
+  pb_file:write(assert(render('build_record.html', {dir = dir, makeargs = makeargs, defines = defines, tunes_defines = tunes_defines, primary_faces = primary_faces, secondary_faces = secondary_faces, tertiary_faces = tertiary_faces})):gsub("\n", ""), "\n")
   for _, line in ipairs(lines) do
     pb_file:write(line, "\n")
   end
   pb_file:close()
 end
 
-local function build(dir, makeargs, defines, tunes_defines, faces, secondary_face_index, tertiary_face_index)
+local function build(dir, makeargs, defines, tunes_defines, primary_faces, secondary_faces, tertiary_faces)
   assert(shell.run('rm -rf ' .. dir .. ' && mkdir ' .. dir))
-  assert(render_to_file('movement_config.h', dir .. 'movement_config.h', {defines = defines, faces = faces, secondary_face_index = secondary_face_index, tertiary_face_index = tertiary_face_index}))
+  assert(render_to_file('movement_config.h', dir .. 'movement_config.h', {defines = defines, primary_faces = primary_faces, secondary_faces = secondary_faces, tertiary_faces = tertiary_faces}))
   assert(render_to_file('movement_tunes_config.h', dir .. 'movement_tunes_config.h', {defines = tunes_defines}))
 
   local argslist = {}
@@ -227,8 +229,8 @@ end
 
 
 -- MAIN STUFF
-local makeargs, defines, tunes_defines, faces, secondary_face_index, tertiary_face_index = process_post_args(ngx.req.get_post_args())
-local dir = '/builds/' .. generate_build_hash(makeargs, defines, tunes_defines, faces, secondary_face_index, tertiary_face_index) .. '/'
+local makeargs, defines, tunes_defines, primary_faces, secondary_faces, tertiary_faces = process_post_args(ngx.req.get_post_args())
+local dir = '/builds/' .. generate_build_hash(makeargs, defines, tunes_defines, primary_faces, secondary_faces, tertiary_faces) .. '/'
 
 if not exists(dir .. 'completed') then
   -- only one build at a time, please.
@@ -242,10 +244,10 @@ if not exists(dir .. 'completed') then
       return
     end
 
-    local ok, stdout, stderr = build(dir, makeargs, defines, tunes_defines, faces, secondary_face_index, tertiary_face_index)
+    local ok, stdout, stderr = build(dir, makeargs, defines, tunes_defines, primary_faces, secondary_faces, tertiary_faces)
     if ok then
       assert(render_to_file('success_build.html', dir .. 'index.html', {makeargs = makeargs, stdout = stdout, stderr = stderr}))
-      update_build_list(dir, makeargs, defines, tunes_defines, faces, secondary_face_index, tertiary_face_index)
+      update_build_list(dir, makeargs, defines, tunes_defines, primary_faces, secondary_faces, tertiary_faces)
     else
       ngx.log(ngx.WARN, 'Build failed: ' .. tostring(stderr))
       assert(render_to_file('fail_build.html', dir .. 'index.html', {stdout = stdout, stderr = stderr}))

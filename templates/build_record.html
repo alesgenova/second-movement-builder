@@ -11,11 +11,17 @@
          <% end %>
         <br>
         <strong>
-         <% for _, face in ipairs(faces) do %>
+         <% for _, face in ipairs(primary_faces) do %>
            <%= face %>;
          <% end %>
-         (<%= secondary_face_index %>)
-         (<%= tertiary_face_index %>)
+         ||secondary||
+         <% for _, face in ipairs(secondary_faces) do %>
+           <%= face %>;
+         <% end %>
+         ||tertiary||
+         <% for _, face in ipairs(tertiary_faces) do %>
+           <%= face %>;
+         <% end %>
         </strong>
       </a>
       <br><%= os.date("%c") %>
