@@ -30,3 +30,20 @@ index cafa09f..9758b93 100644
  
  #include "movement_custom_signal_tunes.h"
  
+diff --git a/watch-faces/settings/page_ordering_face.c b/watch-faces/settings/page_ordering_face.c
+index dd1a3ca2..3fbcd15b 100644
+--- a/watch-faces/settings/page_ordering_face.c
++++ b/watch-faces/settings/page_ordering_face.c
+@@ -25,7 +25,11 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include "page_ordering_face.h"
+-#include "movement_config.h"
++#ifndef MOVEMENT_CONFIG
++#define MOVEMENT_CONFIG "movement_config.h"
++#endif
++
++#include MOVEMENT_CONFIG
+ #include "delay.h"
+ 
+ /* MOVEMENT_FACE_NAME gives a string of the name of the face, which can

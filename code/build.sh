@@ -25,13 +25,16 @@ for build_dir in "build-${board}_${display}" "build-sim-${board}_${display}"; do
   for f in $build_dir/*.o; do
     ln -s "$(pwd)/$f" "$dir$f"
   done
-  # Except movement.o we'll need to regenerate.
+  # Remove all the *.o that depend on movement_config.h and movement_tunes_config.h
+  # so that user settings from the builder UI are properly applied.
+  #
   # I experimented with refactoring this out as well, such that changing movement_config.h
   # only affected a couple of functions, but it didn't actually save that much time and
   # required a much larger change to the repo (i.e. not one we want to carry in a patch).
   rm "$dir$build_dir/movement.o"
   rm "$dir$build_dir/movement_custom_signal_tunes.o"
   rm "$dir$build_dir/movement_custom_alarm_tunes.o"
+  rm "$dir$build_dir/page_ordering_face.o"
 done
 
 echo make BUILD="${dir}build-${board}_${display}" MOVEMENT_CONFIG="${dir}movement_config.h" MOVEMENT_TUNES_CONFIG="${dir}movement_tunes_config.h" "$@"
