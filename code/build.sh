@@ -35,6 +35,11 @@ for build_dir in "build-${board}_${display}" "build-sim-${board}_${display}"; do
   rm "$dir$build_dir/movement_custom_signal_tunes.o"
   rm "$dir$build_dir/movement_custom_alarm_tunes.o"
   rm "$dir$build_dir/page_ordering_face.o"
+  # The firmware-flasher objects can't stay symlinked into the read-only
+  # prebuilt tree: flasher-rules.mk objcopies the RAM-resident TUs in place,
+  # and the face/core objects are recompiled whenever patch-backend.flag is
+  # (re)created -- both would write through the symlink. Rebuild them fresh.
+  rm -f "$dir$build_dir"/firmware_flasher_*.o
 done
 
 echo make BUILD="${dir}build-${board}_${display}" MOVEMENT_CONFIG="${dir}movement_config.h" MOVEMENT_TUNES_CONFIG="${dir}movement_tunes_config.h" "$@"

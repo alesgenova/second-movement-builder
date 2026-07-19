@@ -69,6 +69,12 @@ RUN make 'BUILD=build-sensorwatch_pro_custom' BOARD=sensorwatch_pro DISPLAY=cust
 
 WORKDIR /
 RUN mkdir /builds
+# flasher.mk reaches $(BUILD)/flasher-main.ld through a relative traversal
+# (gossamer prepends chips/<chip>/linker/, flasher.mk cancels it with ../s),
+# which resolves to <firmware root>/$(BUILD). With the builder's absolute
+# BUILD=/builds/<hash>/... that lands on /second-movement/builds/... — make
+# that spot point at the real /builds.
+RUN ln -s /builds /second-movement/builds
 RUN touch /builds/list.html
 #RUN chown -R www-data:www-data /emcache
 RUN chown -R www-data:www-data /builds
